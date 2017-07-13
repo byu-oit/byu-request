@@ -1,0 +1,27 @@
+{
+  "name": "byu-request",
+  "version": "0.0.1",
+  "description": "a simple npm module for making api requests to BYU (api.byu.edu)",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byu-oit/byu-request.git"
+  },
+  "keywords": [
+    "api",
+    "byu"
+  ],
+  "author": "Spencer Holman",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/byu-oit/byu-request/issues"
+  },
+  "homepage": "https://github.com/byu-oit/byu-request#readme",
+  "dependencies": {
+    "aws-sdk": "^2.83.0",
+    "request": "^2.81.0"
+  }
+}
