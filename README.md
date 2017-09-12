@@ -17,7 +17,12 @@ var byuRequest = require('byu-request')
     "byuClientSecret": "123456789abcdefghijklmn"
 }) */
 
-/* Config Options 2 and 3 do not require the config object */
+/* Config Options 2 does not require the config object */
+
+/* Config Option 3 */
+/* byuRequest.config({
+    "awsRegion": "us-west-2"
+}) */
 
 /* Config Option 4 */
 /* byuRequest.config({
