@@ -1,6 +1,6 @@
 {
   "name": "byu-request",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "a simple npm module for making api requests to BYU (api.byu.edu)",
   "main": "index.js",
   "scripts": {
@@ -22,6 +22,7 @@
   "homepage": "https://github.com/byu-oit/byu-request#readme",
   "dependencies": {
     "aws-sdk": "^2.83.0",
-    "request": "^2.81.0"
+    "request": "^2.81.0",
+    "request-promise": "^4.2.1"
   }
 }

@@ -17,15 +17,18 @@
  * spencer.a.holman@gmail.com
  */
 
-var byu = require('./index.js') // byu-request
-var byu_config = {
-    'credential_method': 'aws_ssm', // Either aws_ssm or env_vars
-    'aws': { // include if using aws_ssm
-        'parameter_header': 'lms-event-integration.dev',
-        'region': 'us-west-2',
-        'aws_params_location': 'file' // Either file (~/.aws/credentials) or env_vars
-    }
-}
+/*
+First, will check to see if client id and client secret were passed in in the config.
+if not, will check for environment variables BYU_CLIENT_ID and BYU_CLIENT_SECRET
+If not present in either, will see if they are in the parameter store.  If the application is a handel application, them the names will be automaticly found in the env vars.  If not, then the parameter_header is required in the config.
+*/
+
+const byuRequest = require('./index.js')
+// byuRequest.config({
+//     "ssmParameterHeader": "lms-event-integration.dev",
+//     "awsRegion": "us-west-2"
+// })
+const byu = byuRequest.request;
 
 var requestOptions = {
     'url': 'https://y-stg.byu.edu/ae/prod/class_schedule/cgi/courseSection.cgi/json/20175/psych/350/001',
@@ -35,10 +38,7 @@ var requestOptions = {
     }
 }
 
-byu(requestOptions, byu_config, function(err, res, body) {
-    if(err) {
-        console.log(err)
-    } else {
-        console.log(body)
-    }
-})
+return byu(requestOptions)
+    .then((res) => {
+        console.log(res);
+    })

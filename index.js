@@ -17,113 +17,111 @@
  * spencer.a.holman@gmail.com
  */
 
-const request = require('request');
-var byu_access_token;
-var BYU_CLIENT_ID;
-var BYU_CLIENT_SECRET;
-var AWS;
-var parameter_header;
-var ssm;
+const request = require('request-promise')
+const AWS = require('aws-sdk')
+var config = {};
 
-module.exports = function(requestOptions, config, callback) {
-    // try{
-        if(config.credential_method == 'aws_ssm') {
-            AWS = require('aws-sdk');
-            parameter_header = config.aws.parameter_header
-            var aws_config = { region: config.aws.region };
-            ssm = new AWS.SSM(aws_config);
-            if(config.aws.aws_params_location == 'file') {
-                var credentials = new AWS.SharedIniFileCredentials({profile: 'default'});
-                AWS.config.credentials = credentials;
-            } else if (config.aws.aws_params_location == 'env_vars') {
-                if (!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY)) {
-                    throw("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY not set as environment variables")
-                }
-            } else {
-                throw("Invalid aws_params_location");
-            }
-            getBYUParams(requestOptions, callback)
-        } else if(config.credential_method == 'env_vars') {
-            if(process.env.BYU_CLIENT_ID && process.env.BYU_CLIENT_SECRET) {
-                BYU_CLIENT_ID = process.env.BYU_CLIENT_ID;
-                BYU_CLIENT_SECRET = process.env.BYU_CLIENT_SECRET;
-            } else {
-                throw("BYU environment variables not found. Expection BYU_CLIENT_ID and BYU_CLIENT_SECRET")
-            }
-            byuProcessRequest(requestOptions, callback)
+exports.config = (confParam) => {
+    config = confParam;
+};
+
+exports.request = function(requestOptions) {
+    if(config.byuClientId && config.byuClientSecret) {
+        return makeRequest(requestOptions)
+    } else if (process.env.BYU_CLIENT_ID && process.env.BYU_CLIENT_SECRET) {
+        config.byuClientId = process.env.BYU_CLIENT_ID;
+        config.byuClientSecret = process.env.BYU_CLIENT_SECRET;
+        return makeRequest(requestOptions)
+    } else {
+        let parameterHeader;
+        if (process.env.HANDEL_APP_NAME && process.env.HANDEL_ENVIRONMENT_NAME) {
+            parameterHeader = `${process.env.HANDEL_APP_NAME}.${process.env.HANDEL_ENVIRONMENT_NAME}`
         } else {
-            throw("Invalid credential_method");
+            if(config.ssmParameterHeader) {
+                parameterHeader = config.ssmParameterHeader
+            } else {
+                throw Error("When using ssm outside of a handel environment, the ssmParameterHeader parameter is required in config")
+            }
         }
-    // } catch(err) {
-    //     throw("BAD CONFIG: " + err)
-    // }
+        return getParams(parameterHeader)
+            .then(() => {
+                return makeRequest(requestOptions)
+            })
+    }
 }
 
-function getBYUParams(requestOptions, callback) {
+function getParams(parameterHeader) {
+    let SSM;
+    if(config.awsRegion) {
+        SSM = new AWS.SSM({ region: config.awsRegion , apiVersion: '2014-11-06'});
+    } else {
+        throw Error("When using ssm, the awsRegion parameter is required in config")
+    }
     var params = {
-      Names: [
-        'lms-event-integration.dev.BYU_CLIENT_ID',
-        'lms-event-integration.dev.BYU_CLIENT_SECRET'
-      ],
-      WithDecryption: true
+    Names: [
+        `${parameterHeader}.BYU_CLIENT_ID`,
+        `${parameterHeader}.BYU_CLIENT_SECRET`
+    ],
+    WithDecryption: true
     };
-    ssm.getParameters(params, function(err, data) {
-        if (err) {
-            console.log(err, err.stack);
-            callback("ssm.getParameters failed")
-        }
-        else {
-          for (i = 0; i < data.Parameters.length; i++) {
-              if (data.Parameters[i].Name == "lms-event-integration.dev.BYU_CLIENT_ID") {
-                  BYU_CLIENT_ID = data.Parameters[i].Value
-                  // console.log(BYU_CLIENT_ID)
-              }
-              if (data.Parameters[i].Name == "lms-event-integration.dev.BYU_CLIENT_SECRET") {
-                  BYU_CLIENT_SECRET = data.Parameters[i].Value
-              }
-          }
-          byuProcessRequest(requestOptions, callback);
-        }
-    })
+    return SSM.getParameters(params).promise()
+        .then((data) => {
+            for (let i = 0; i < data.Parameters.length; i++) {
+                if (data.Parameters[i].Name == `${parameterHeader}.BYU_CLIENT_ID`) {
+                    config.byuClientId = data.Parameters[i].Value
+                }
+                if (data.Parameters[i].Name == `${parameterHeader}.BYU_CLIENT_SECRET`) {
+                    config.byuClientSecret = data.Parameters[i].Value
+                }
+            }
+            return;
+        })
+        .catch(error => {
+            throw Error(`ssm.getParameters failed with error: ${error}`)
+        })
 }
 
-function byuProcessRequest(requestOptions, callback) {
-    if (byu_access_token) {
-        makeRequest(requestOptions, callback);
-    }
-    else {
-        getNewAccessToken(requestOptions, callback)
+function makeRequest(requestOptions) {
+    if (config.accessToken && tokenValid(config.tokenExpires)) {
+        if (!requestOptions.headers) {
+            requestOptions.headers = {}
+        }
+        requestOptions.headers["Authorization"] = "Bearer " + config.accessToken;
+        return request(requestOptions)
+    } else {
+        return newToken()
+            .then(() => {
+                return makeRequest(requestOptions)
+            })
     }
 }
 
-function getNewAccessToken(requestOptions, callback) {
-    request({
+function tokenValid(tokenExpires) {
+    let now = new Date()
+    if (now > tokenExpires) {
+        return false;
+    }
+    return true;
+}
+
+function newToken() {
+    return request({
         'url': 'https://api.byu.edu:443/token',
         'auth': {
-            'user': BYU_CLIENT_ID,
-            'pass': BYU_CLIENT_SECRET,
+            'user': config.byuClientId,
+            'pass': config.byuClientSecret,
             'sendImmediately': true
         },
         'form': {
             'grant_type': 'client_credentials'
         },
         'method': 'POST'
-    }, function(error, response, body) {
-        if(error) {
-            console.log(error)
-            callback(error)
-        }
-        body = JSON.parse(body) ;
-        byu_access_token = body.access_token;
-        makeRequest(requestOptions, callback)
     })
-}
-
-function makeRequest(requestOptions, callback) {
-    if (!requestOptions.headers) {
-        requestOptions.headers = {}
-    }
-    requestOptions.headers["Authorization"] = "Bearer " + byu_access_token;
-    request(requestOptions, callback)
-    // Here error handling could be added for status codes and html error pages
+        .then((res) => {
+            res = JSON.parse(res);
+            config.accessToken = res.access_token;
+            let now = new Date()
+            config.tokenExpires = new Date(now.getTime() + res.expiresIn * 1000);
+            return;
+        })
 }
