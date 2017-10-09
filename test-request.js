@@ -24,14 +24,14 @@ If not present in either, will see if they are in the parameter store.  If the a
 */
 
 const byuRequest = require('./index.js')
-// byuRequest.config({
-//     "ssmParameterHeader": "lms-event-integration.dev",
-//     "awsRegion": "us-west-2"
-// })
+byuRequest.config({
+    // "ssmParameterHeader": "lms-event-integration.dev",
+    "awsRegion": "us-west-2"
+})
 const byu = byuRequest.request;
 
 var requestOptions = {
-    'url': 'https://y-stg.byu.edu/ae/prod/class_schedule/cgi/courseSection.cgi/json/20175/psych/350/001',
+    'url': 'https://api.byu.edu:443/domains/legacy/academic/registration/studentlog/v1/LOGID/129649222',
     'method': 'GET',
     'headers': {
         'Accept': 'application/json'

@@ -1,10 +1,10 @@
 {
   "name": "byu-request",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "a simple npm module for making api requests to BYU (api.byu.edu)",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "HANDEL_APP_NAME=lms-event-integration HANDEL_ENVIRONMENT_NAME=dev node test-request.js"
   },
   "repository": {
     "type": "git",

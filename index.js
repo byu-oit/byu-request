@@ -121,7 +121,7 @@ function newToken() {
             res = JSON.parse(res);
             config.accessToken = res.access_token;
             let now = new Date()
-            config.tokenExpires = new Date(now.getTime() + res.expiresIn * 1000);
+            config.tokenExpires = new Date(now.getTime() + res.expires_in * 1000);
             return;
         })
 }
