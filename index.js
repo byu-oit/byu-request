@@ -82,7 +82,7 @@ function getParams(parameterHeader) {
 }
 
 function makeRequest(requestOptions) {
-    if (config.accessToken && tokenValid(config.tokenExpires)) {
+    if (config.accessToken && tokenValid()) {
         if (!requestOptions.headers) {
             requestOptions.headers = {}
         }
@@ -96,12 +96,13 @@ function makeRequest(requestOptions) {
     }
 }
 
-function tokenValid(tokenExpires) {
+function tokenValid() {
     let now = new Date()
-    if (now > tokenExpires) {
+    if (now.getTime() > config.tokenExpires.getTime()) {
         return false;
+    } else {
+        return true;
     }
-    return true;
 }
 
 function newToken() {
@@ -119,9 +120,12 @@ function newToken() {
     })
         .then((res) => {
             res = JSON.parse(res);
+            if(res.error) {
+                throw Error(`Getting new token failed with error ${res.error}: ${res.error_description}`)
+            }
             config.accessToken = res.access_token;
             let now = new Date()
-            config.tokenExpires = new Date(now.getTime() + res.expires_in * 1000);
+            config.tokenExpires = new Date(now.getTime() + (res.expires_in * 1000));
             return;
         })
 }

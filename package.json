@@ -1,6 +1,6 @@
 {
   "name": "byu-request",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "a simple npm module for making api requests to BYU (api.byu.edu)",
   "main": "index.js",
   "scripts": {

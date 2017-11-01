@@ -31,7 +31,7 @@ byuRequest.config({
 const byu = byuRequest.request;
 
 var requestOptions = {
-    'url': 'https://api.byu.edu:443/domains/legacy/academic/registration/studentlog/v1/LOGID/129649222',
+    'url': 'https://api.byu.edu:443/domains/legacy/academic/registration/studentlog/v1/LOGID/123431242142',
     'method': 'GET',
     'headers': {
         'Accept': 'application/json'
