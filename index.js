@@ -17,8 +17,8 @@
  * spencer.a.holman@gmail.com
  */
 
-const request = require('request-promise')
-const AWS = require('aws-sdk')
+const request = require('request-promise');
+const AWS = require('aws-sdk');
 var config = {};
 
 exports.config = (confParam) => {
@@ -81,13 +81,22 @@ function getParams(parameterHeader) {
         })
 }
 
-function makeRequest(requestOptions) {
+function makeRequest(requestOptions, tryNumber = 0) {
     if (config.accessToken && tokenValid()) {
         if (!requestOptions.headers) {
             requestOptions.headers = {}
         }
         requestOptions.headers["Authorization"] = "Bearer " + config.accessToken;
         return request(requestOptions)
+            .catch((err) => {
+                if(tryNumber < 3) {
+                    return setTimeout(() => {
+                        return makeRequest(requestOptions, tryNumber + 1);
+                    }, 5000);
+                } else {
+                    throw err;
+                }
+            })
     } else {
         return newToken()
             .then(() => {
